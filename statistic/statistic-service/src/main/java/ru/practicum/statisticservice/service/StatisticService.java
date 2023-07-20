@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import ru.practicum.statisticdto.HitDto;
 import ru.practicum.statisticdto.ViewStats;
 import ru.practicum.statisticservice.mapper.HitMapper;
-import ru.practicum.statisticservice.mapper.ViewStatsMapper;
 import ru.practicum.statisticservice.repository.StatisticRepository;
 
 import java.time.LocalDateTime;
@@ -25,16 +24,12 @@ public class StatisticService {
     public List<ViewStats> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, List<String> uris) {
         if (uris == null || uris.isEmpty()) {
             return unique ?
-                    ViewStatsMapper.projectionToViewStats(
-                            statisticRepository.findViewStatisticsWithoutUrisAndIsIpUnique(start, end, PageRequest.of(0, 10))) :
-                    ViewStatsMapper.projectionToViewStats(
-                            statisticRepository.findViewStatisticsWithoutUris(start, end, PageRequest.of(0, 10)));
+                    statisticRepository.findViewStatisticsWithoutUrisAndIsIpUnique(start, end, PageRequest.of(0, 10)) :
+                    statisticRepository.findViewStatisticsWithoutUris(start, end, PageRequest.of(0, 10));
         } else {
             return unique ?
-                    ViewStatsMapper.projectionToViewStats(
-                            statisticRepository.findViewStatisticsWithUrisAndIpIsUnique(start, end, uris)) :
-                    ViewStatsMapper.projectionToViewStats(
-                            statisticRepository.findViewStatisticsWithUris(start, end, uris));
+                    statisticRepository.findViewStatisticsWithUrisAndIpIsUnique(start, end, uris) :
+                    statisticRepository.findViewStatisticsWithUris(start, end, uris);
         }
     }
 }
