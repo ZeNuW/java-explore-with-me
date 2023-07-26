@@ -33,7 +33,7 @@ services:
     depends_on:
       - ewm-db
     environment:
-      - EXPLORE_MAIN_URL=http://main:8080
+      - STATISTIC_SERVICE_URL=http://stats-server:9090
       - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/main-explore
 
   ewm-db:

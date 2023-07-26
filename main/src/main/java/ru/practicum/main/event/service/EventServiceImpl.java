@@ -195,8 +195,12 @@ public class EventServiceImpl implements EventService {
         };
         Pageable pageable = PageRequest.of(from, size, sort.descending());
         Page<Event> events = eventRepository.findAll(spec, pageable);
-        statisticClient.createHit(new HitDto(null, "ewm-main-service", request.getRequestURI(),
-                request.getRemoteAddr(), LocalDateTime.now().format(formatter)));
+        statisticClient.createHit(new HitDto(
+                null,
+                "ewm-main-service",
+                request.getRequestURI(),
+                request.getRemoteAddr(),
+                LocalDateTime.now().format(formatter)));
         return events
                 .stream()
                 .map(EventMapper::eventToShort)
