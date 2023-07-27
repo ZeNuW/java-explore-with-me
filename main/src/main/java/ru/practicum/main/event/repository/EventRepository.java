@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.model.Event;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     Event findFirstByCategoryId(Long catId);
 
-    Event findByIdAndState(Long eventId, ParticipationRequestStatus statusParticipation);
+    Event findByIdAndState(Long eventId, EventStatus statusParticipation);
 
     Event findByIdAndInitiatorId(Long eventId, Long userId);
 

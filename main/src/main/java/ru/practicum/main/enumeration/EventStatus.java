@@ -1,6 +1,6 @@
 package ru.practicum.main.enumeration;
 
-public enum ParticipationRequestStatus {
+public enum EventStatus {
     PENDING,
     PUBLISHED,
     CANCELED

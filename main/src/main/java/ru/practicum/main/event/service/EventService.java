@@ -1,7 +1,7 @@
 package ru.practicum.main.event.service;
 
 import ru.practicum.main.enumeration.EventSort;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.dto.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,7 +18,7 @@ public interface EventService {
 
     EventFullDto updateEventByInitiator(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest);
 
-    List<EventFullDto> getEventsByAdmin(List<Long> users, ParticipationRequestStatus status, List<Long> categories,
+    List<EventFullDto> getEventsByAdmin(List<Long> users, EventStatus status, List<Long> categories,
                                         LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
 
     EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateEventAdminRequest);

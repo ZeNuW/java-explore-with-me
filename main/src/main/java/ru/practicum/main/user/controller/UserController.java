@@ -34,7 +34,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public EventFullDto createEvent(@PathVariable @Positive Long userId,
                                     @RequestBody @Valid NewEventDto newEventDto) {
-        log.info("Получен запрос к эндпоинту: users/{userId}/events createEvent userId = {}, newEventDto = {}",
+        log.info("Получен запрос users/{userId}/events createEvent userId = {}, newEventDto = {}",
                 userId, newEventDto);
         return eventService.createEvent(userId, newEventDto);
     }
@@ -43,7 +43,7 @@ public class UserController {
     public List<EventShort> getEventsByInitiator(@PathVariable @Positive Long userId,
                                                  @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
                                                  @RequestParam(defaultValue = "10") @Positive Integer size) {
-        log.info("Получен запрос к эндпоинту: users/{userId}/events getEventsByInitiator userId = {}, from = {}," +
+        log.info("Получен запрос users/{userId}/events getEventsByInitiator userId = {}, from = {}," +
                 "size = {}", userId, from, size);
         return eventService.getEventsByInitiator(userId, from, size);
     }
@@ -51,7 +51,7 @@ public class UserController {
     @GetMapping("/{userId}/events/{eventId}")
     public EventFullDto getEventByInitiator(@PathVariable @Positive Long userId,
                                             @PathVariable @Positive Long eventId) {
-        log.info("Получен запрос к эндпоинту: users/{userId}/events/{eventId} " +
+        log.info("Получен запрос users/{userId}/events/{eventId} " +
                 "getEventByInitiator userId={}, eventId={}", userId, eventId);
         return eventService.getEventByInitiator(userId, eventId);
     }
@@ -60,7 +60,7 @@ public class UserController {
     public EventFullDto updateEventByInitiator(@PathVariable @Positive Long userId,
                                           @PathVariable @Positive Long eventId,
                                           @RequestBody @Validated UpdateEventUserRequest updateEventUserRequest) {
-        log.info("Получен запрос к эндпоинту: users/{userId}/events/{eventId} updateEventByInitiator " +
+        log.info("Получен запрос users/{userId}/events/{eventId} updateEventByInitiator " +
                 "с userId={}, eventId={}", userId, eventId);
         return eventService.updateEventByInitiator(userId, eventId, updateEventUserRequest);
     }
@@ -68,7 +68,7 @@ public class UserController {
     @GetMapping("/{userId}/events/{eventId}/requests")
     public List<ParticipationRequestDto> getRequestEventByUser(@PathVariable @Positive Long userId,
                                                                @PathVariable @Positive Long eventId) {
-        log.info("Получен запрос к эндпоинту: users/{userId}/events/{eventId}/requests getRequestEventByUser " +
+        log.info("Получен запрос users/{userId}/events/{eventId}/requests getRequestEventByUser " +
                 "с userId={}, eventId={}", userId, eventId);
         return requestService.getRequestEventByUser(userId, eventId);
     }

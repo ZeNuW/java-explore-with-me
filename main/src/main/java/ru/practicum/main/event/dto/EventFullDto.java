@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.main.category.dto.CategoryDto;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.location.dto.LocationDto;
 import ru.practicum.main.user.dto.UserShort;
 
@@ -29,7 +29,7 @@ public class EventFullDto {
     private Integer participantLimit;
     private LocalDateTime publishedOn;
     private Boolean requestModeration = true;
-    private ParticipationRequestStatus state;
+    private EventStatus state;
     private String title;
     private Integer views;
 }

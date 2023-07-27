@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.main.category.model.Category;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.location.model.Location;
 import ru.practicum.main.user.model.User;
 
@@ -46,7 +46,7 @@ public class Event {
     @Column(name = "request_moderation")
     private Boolean requestModeration;
     @Enumerated(value = EnumType.STRING)
-    private ParticipationRequestStatus state;
+    private EventStatus state;
     private String title;
     private Integer views;
 }

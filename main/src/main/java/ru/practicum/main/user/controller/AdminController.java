@@ -13,7 +13,7 @@ import ru.practicum.main.compilation.dto.CompilationDto;
 import ru.practicum.main.compilation.dto.NewCompilationDto;
 import ru.practicum.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.main.compilation.service.CompilationService;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.dto.EventFullDto;
 import ru.practicum.main.event.dto.UpdateEventAdminRequest;
 import ru.practicum.main.event.service.EventService;
@@ -63,7 +63,7 @@ public class AdminController {
 
     @GetMapping("/events")
     public List<EventFullDto> getEventsByAdmin(@RequestParam(required = false) List<Long> users,
-                                               @RequestParam(required = false) ParticipationRequestStatus status,
+                                               @RequestParam(required = false) EventStatus status,
                                                @RequestParam(required = false) List<Long> categories,
                                                @RequestParam(required = false)
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,

@@ -32,7 +32,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long catId) {
-        Category category = checkCategory(catId);
+        Category category = getCategory(catId);
         checkEvent(catId);
         categoryRepository.delete(category);
     }
@@ -49,13 +49,13 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public CategoryDto getCategory(Long catId) {
-        return CategoryMapper.categoryToDto(checkCategory(catId));
+    public CategoryDto getCategoryById(Long catId) {
+        return CategoryMapper.categoryToDto(getCategory(catId));
     }
 
     @Override
     public CategoryDto updateCategory(NewCategoryDto newCategoryDto, Long catId) {
-        Category category = checkCategory(catId);
+        Category category = getCategory(catId);
         category.setName(newCategoryDto.getName());
         return CategoryMapper.categoryToDto(categoryRepository.save(category));
     }
@@ -66,7 +66,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
-    private Category checkCategory(Long catId) {
+    private Category getCategory(Long catId) {
         return categoryRepository.findById(catId).orElseThrow(
                 () -> new ObjectNotExistException(String.format("Категория с id = %d, не найдена", catId)));
     }

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
 import ru.practicum.main.enumeration.EventSort;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.enumeration.StateAction;
 import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.mapper.EventMapper;
@@ -77,13 +77,13 @@ public class EventServiceImpl implements EventService {
             }
         }
         Event event = checkEvent(eventId, userId);
-        if (event.getState() == ParticipationRequestStatus.PUBLISHED) {
+        if (event.getState() == EventStatus.PUBLISHED) {
             throw new ObjectConflictException("Вы не можете изменить уже опубликованное событие");
         }
         if (updateEventUserRequest.getStateAction() == StateAction.CANCEL_REVIEW) {
-            event.setState(ParticipationRequestStatus.CANCELED);
+            event.setState(EventStatus.CANCELED);
         } else {
-            event.setState(ParticipationRequestStatus.PENDING);
+            event.setState(EventStatus.PENDING);
         }
         changeEventProperties(event, updateEventUserRequest);
         return EventMapper.eventToDto(eventRepository.save(event));
@@ -106,7 +106,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EventFullDto> getEventsByAdmin(List<Long> users, ParticipationRequestStatus status, List<Long> categories,
+    public List<EventFullDto> getEventsByAdmin(List<Long> users, EventStatus status, List<Long> categories,
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
         Pageable pageable = PageRequest.of(from, size);
         List<Event> events = eventRepository.findAll((root, query, cb) -> {
@@ -150,12 +150,12 @@ public class EventServiceImpl implements EventService {
         }
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId)));
-        if (event.getState() != ParticipationRequestStatus.PENDING) {
+        if (event.getState() != EventStatus.PENDING) {
             throw new ObjectConflictException("Опубликовать событие можно только в случае если его состояние «ожидает публикации»");
         }
         changeEventProperties(event, updateEventAdminRequest);
         event.setState(updateEventAdminRequest.getStateAction() == StateAction.PUBLISH_EVENT ?
-                ParticipationRequestStatus.PUBLISHED : ParticipationRequestStatus.CANCELED);
+                EventStatus.PUBLISHED : EventStatus.CANCELED);
         locationRepository.saveAndFlush(event.getLocation());
         eventRepository.saveAndFlush(event);
         return EventMapper.eventToDto(eventRepository.getReferenceById(eventId));
@@ -163,7 +163,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEvent(Long eventId, HttpServletRequest request) {
-        Event event = eventRepository.findByIdAndState(eventId, ParticipationRequestStatus.PUBLISHED);
+        Event event = eventRepository.findByIdAndState(eventId, EventStatus.PUBLISHED);
         if (event == null) {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
@@ -195,7 +195,7 @@ public class EventServiceImpl implements EventService {
         }
         Specification<Event> spec = (root, query, cb) -> {
             Predicate[] predicates = {
-                    cb.equal(root.get("state"), ParticipationRequestStatus.PUBLISHED),
+                    cb.equal(root.get("state"), EventStatus.PUBLISHED),
                     text != null ? cb.or(
                             cb.like(cb.lower(root.get("annotation")), "%" + text.toLowerCase() + "%"),
                             cb.like(cb.lower(root.get("description")), "%" + text.toLowerCase() + "%")

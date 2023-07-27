@@ -3,7 +3,7 @@ package ru.practicum.main.request.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.enumeration.RequestStatus;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
@@ -33,9 +33,14 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
+        userRepository.findById(userId).orElseThrow(
+                () -> new ObjectValidationException(String.format("Пользователь с id = %d не найден", userId)));
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ObjectValidationException(String.format("Эвент с id = %d не найден", eventId)));
-        if (event.getState() != ParticipationRequestStatus.PUBLISHED) {
+        if (requestRepository.findByRequesterAndId(userId, eventId) != null) {
+            throw new ObjectConflictException("Вы уже отправили заявку на участие в событии");
+        }
+        if (event.getState() != EventStatus.PUBLISHED) {
             throw new ObjectConflictException("Вы не можете участвовать в событии, которое ещё не опубликовано");
         }
         if (event.getConfirmedRequests() >= event.getParticipantLimit() && event.getParticipantLimit() != 0) {

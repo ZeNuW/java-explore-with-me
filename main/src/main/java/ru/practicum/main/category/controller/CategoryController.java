@@ -28,8 +28,8 @@ public class CategoryController {
     }
 
     @GetMapping("/{catId}")
-    public CategoryDto getCategory(@PathVariable @Positive Long catId) {
-        log.info("Получен запрос /categories/{catId} getCategory c id = {}", catId);
-        return categoryService.getCategory(catId);
+    public CategoryDto getCategoryById(@PathVariable @Positive Long catId) {
+        log.info("Получен запрос /categories/{catId} getCategoryById c id = {}", catId);
+        return categoryService.getCategoryById(catId);
     }
 }

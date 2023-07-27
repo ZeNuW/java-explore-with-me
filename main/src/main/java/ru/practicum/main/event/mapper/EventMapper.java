@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.main.category.mapper.CategoryMapper;
 import ru.practicum.main.category.model.Category;
-import ru.practicum.main.enumeration.ParticipationRequestStatus;
+import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.dto.NewEventDto;
 import ru.practicum.main.event.dto.EventFullDto;
 import ru.practicum.main.event.dto.EventShort;
@@ -34,7 +34,7 @@ public final class EventMapper {
                 newEventDto.getParticipantLimit(),
                 LocalDateTime.now(),
                 newEventDto.getRequestModeration(),
-                ParticipationRequestStatus.PENDING,
+                EventStatus.PENDING,
                 newEventDto.getTitle(),
                 0
         );
