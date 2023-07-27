@@ -91,7 +91,6 @@ public class AdminController {
         return eventService.updateEventByAdmin(eventId, adminRequest);
     }
 
-
     @PostMapping("/users")
     @ResponseStatus(HttpStatus.CREATED)
     public UserDto createUser(@RequestBody @Valid NewUserRequest userRequest) {
