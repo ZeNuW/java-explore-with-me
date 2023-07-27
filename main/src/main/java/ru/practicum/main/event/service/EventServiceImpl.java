@@ -167,7 +167,7 @@ public class EventServiceImpl implements EventService {
         if (event == null) {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
-        int hitsBefore = getAmountOfUniqueViews(request);
+        int hitsBefore = getAmountOfUniqueViews(event.getPublishedOn(), request);
         statisticClient.createHit(new HitDto(
                 null,
                 "ewm-main-service",
@@ -176,7 +176,7 @@ public class EventServiceImpl implements EventService {
                 LocalDateTime.now().format(formatter)));
         event.setViews(event.getViews() + 1);
         eventRepository.save(event);
-        int hitsAfter = getAmountOfUniqueViews(request);
+        int hitsAfter = getAmountOfUniqueViews(event.getPublishedOn(), request);
         if (hitsAfter <= hitsBefore) {
             event.setViews(event.getViews() - 1);
             eventRepository.save(event);
@@ -221,10 +221,10 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
-    private int getAmountOfUniqueViews(HttpServletRequest request) {
+    private int getAmountOfUniqueViews(LocalDateTime eventPublishedOn, HttpServletRequest request) {
         return statisticClient.getStatistic(
-                        LocalDateTime.now().minusYears(100).format(formatter),
-                        LocalDateTime.now().plusHours(1).format(formatter),
+                        eventPublishedOn.format(formatter),
+                        LocalDateTime.now().format(formatter),
                         true,
                         request.getRequestURI())
                 .size();

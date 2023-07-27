@@ -37,7 +37,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest updateCompilationRequest) {
-        Compilation compilation = checkCompilation(compId);
+        Compilation compilation = getCompilation(compId);
         if (updateCompilationRequest.getTitle() != null) {
             compilation.setTitle(updateCompilationRequest.getTitle());
         }
@@ -54,13 +54,13 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     public void deleteCompilation(Long compId) {
-        compilationRepository.delete(checkCompilation(compId));
+        compilationRepository.delete(getCompilation(compId));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public CompilationDto getCompilation(Long compId) {
-        return CompilationMapper.compilationToDto(checkCompilation(compId));
+    public CompilationDto getCompilationById(Long compId) {
+        return CompilationMapper.compilationToDto(getCompilation(compId));
     }
 
     @Override
@@ -73,7 +73,7 @@ public class CompilationServiceImpl implements CompilationService {
         return CompilationMapper.compilationToDto(compilationPage.getContent());
     }
 
-    private Compilation checkCompilation(Long compId) {
+    private Compilation getCompilation(Long compId) {
         return compilationRepository.findById(compId)
                 .orElseThrow(() -> new ObjectValidationException(String.format("Подборка с id = %d не найдена", compId)));
     }

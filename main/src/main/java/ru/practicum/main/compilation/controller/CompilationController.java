@@ -28,8 +28,8 @@ public class CompilationController {
     }
 
     @GetMapping("/{compId}")
-    public CompilationDto getCompilation(@PathVariable @Positive Long compId) {
-        log.info("Получен запрос к эндпоинту /compilations - getCompilation с compId: {}", compId);
-        return compilationService.getCompilation(compId);
+    public CompilationDto getCompilationById(@PathVariable @Positive Long compId) {
+        log.info("Получен запрос к эндпоинту /compilations - getCompilationById с compId: {}", compId);
+        return compilationService.getCompilationById(compId);
     }
 }
