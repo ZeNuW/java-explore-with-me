@@ -58,6 +58,11 @@ public class RequestServiceImpl implements RequestService { //ok
             throw new ObjectValidationException(String.format("Запрос с id = %d не был найден", requestId));
         }
         participationRequest.setStatus(RequestStatus.CANCELED);
+        long eventId = participationRequest.getEvent();
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ObjectValidationException(String.format("Эвент с id = %d не найден", eventId)));
+        event.setConfirmedRequests(event.getConfirmedRequests() - 1);
+        eventRepository.save(event);
         return RequestMapper.requestToDto(requestRepository.save(participationRequest));
     }
 
