@@ -2,6 +2,7 @@ package ru.practicum.main.request.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.enumeration.ParticipationRequestStatus;
 import ru.practicum.main.enumeration.RequestStatus;
 import ru.practicum.main.event.model.Event;
@@ -23,12 +24,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class RequestServiceImpl implements RequestService { //ok
+@Transactional
+public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
+    @Override
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ObjectValidationException(String.format("Эвент с id = %d не найден", eventId)));
@@ -52,6 +55,7 @@ public class RequestServiceImpl implements RequestService { //ok
         return RequestMapper.requestToDto(requestRepository.save(participationRequest));
     }
 
+    @Override
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
         ParticipationRequest participationRequest = requestRepository.findByRequesterAndId(userId, requestId);
         if (participationRequest == null) {
@@ -66,6 +70,8 @@ public class RequestServiceImpl implements RequestService { //ok
         return RequestMapper.requestToDto(requestRepository.save(participationRequest));
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<ParticipationRequestDto> getRequest(Long userId) {
         userRepository.findById(userId).orElseThrow(
                 () -> new ObjectValidationException(String.format("Пользователь с id = %d не найден", userId)));
@@ -75,6 +81,8 @@ public class RequestServiceImpl implements RequestService { //ok
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<ParticipationRequestDto> getRequestEventByUser(Long userId, Long eventId) {
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId);
         if (event == null) {
@@ -86,6 +94,7 @@ public class RequestServiceImpl implements RequestService { //ok
                 .collect(Collectors.toList());
     }
 
+    @Override
     public EventRequestStatusUpdateResult updateRequestStatus(Long userId, Long eventId, EventRequestStatusUpdateRequest statusUpdateRequest) {
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId);
         if (event == null) {

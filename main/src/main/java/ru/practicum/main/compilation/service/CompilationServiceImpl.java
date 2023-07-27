@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.compilation.dto.NewCompilationDto;
 import ru.practicum.main.compilation.dto.CompilationDto;
 import ru.practicum.main.compilation.dto.UpdateCompilationRequest;
@@ -19,11 +20,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
 
+    @Override
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         List<Event> eventList = eventRepository.findAllByIdIn(
                 newCompilationDto.getEvents() == null ? Collections.emptySet() : newCompilationDto.getEvents());
@@ -32,6 +35,7 @@ public class CompilationServiceImpl implements CompilationService {
         return CompilationMapper.compilationToDto(compilation);
     }
 
+    @Override
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest updateCompilationRequest) {
         Compilation compilation = checkCompilation(compId);
         if (updateCompilationRequest.getTitle() != null) {
@@ -48,16 +52,19 @@ public class CompilationServiceImpl implements CompilationService {
         return CompilationMapper.compilationToDto(updatedCompilation);
     }
 
+    @Override
     public void deleteCompilation(Long compId) {
         compilationRepository.delete(checkCompilation(compId));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CompilationDto getCompilation(Long compId) {
         return CompilationMapper.compilationToDto(checkCompilation(compId));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CompilationDto> getAllCompilations(Boolean pinned, Integer from, Integer size) {
         PageRequest pageRequest = PageRequest.of(from, size);
         Page<Compilation> compilationPage;

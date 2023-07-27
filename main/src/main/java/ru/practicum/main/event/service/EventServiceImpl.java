@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
 import ru.practicum.main.enumeration.EventSort;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
@@ -48,6 +50,7 @@ public class EventServiceImpl implements EventService {
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT = 2;
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT_ADMIN_UPDATE = 1;
 
+    @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
         LocalDateTime nowTime = LocalDateTime.now();
         long duration = Duration.between(nowTime, newEventDto.getEventDate()).toHours();
@@ -63,6 +66,7 @@ public class EventServiceImpl implements EventService {
         return EventMapper.eventToDto(eventRepository.save(EventMapper.eventFromDto(newEventDto, category, initiator, nowTime)));
     }
 
+    @Override
     public EventFullDto updateEventByInitiator(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
         LocalDateTime nowTime = LocalDateTime.now();
         if (updateEventUserRequest.getEventDate() != null) {
@@ -85,10 +89,14 @@ public class EventServiceImpl implements EventService {
         return EventMapper.eventToDto(eventRepository.save(event));
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public EventFullDto getEventByInitiator(Long userId, Long eventId) {
         return EventMapper.eventToDto(checkEvent(eventId, userId));
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<EventShort> getEventsByInitiator(Long userId, Integer from, Integer size) {
         return eventRepository.findByInitiatorId(userId, PageRequest.of(from, size))
                 .stream()
@@ -96,6 +104,8 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<EventFullDto> getEventsByAdmin(List<Long> users, ParticipationRequestStatus status, List<Long> categories,
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
         Pageable pageable = PageRequest.of(from, size);
@@ -124,6 +134,7 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateEventAdminRequest) {
         LocalDateTime currentTime = LocalDateTime.now();
         LocalDateTime eventTime = updateEventAdminRequest.getEventDate();
@@ -150,6 +161,7 @@ public class EventServiceImpl implements EventService {
         return EventMapper.eventToDto(eventRepository.getReferenceById(eventId));
     }
 
+    @Override
     public EventFullDto getEvent(Long eventId, HttpServletRequest request) {
         Event event = eventRepository.findByIdAndState(eventId, ParticipationRequestStatus.PUBLISHED);
         if (event == null) {
@@ -172,6 +184,8 @@ public class EventServiceImpl implements EventService {
         return EventMapper.eventToDto(event);
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<EventShort> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
                                       LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from, Integer size, HttpServletRequest request) {
         final LocalDateTime finalRangeStart = rangeStart != null ? rangeStart : LocalDateTime.now();
