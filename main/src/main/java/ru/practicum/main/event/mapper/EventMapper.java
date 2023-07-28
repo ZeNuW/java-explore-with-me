@@ -2,6 +2,7 @@ package ru.practicum.main.event.mapper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ru.practicum.main.category.mapper.CategoryMapper;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.enumeration.EventStatus;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class EventMapper {
 
     public static Event eventFromDto(NewEventDto newEventDto, Category category, User initiator, LocalDateTime created) {
@@ -61,6 +63,16 @@ public final class EventMapper {
         );
     }
 
+    public static List<EventFullDto> eventToDto(Iterable<Event> events, Map<Long, Integer> views) {
+        List<EventFullDto> eventDtoList = new ArrayList<>();
+        int eventViews;
+        for (Event event : events) {
+            eventViews = views.getOrDefault(event.getId(), 0);
+            eventDtoList.add(eventToDto(event, eventViews));
+        }
+        return eventDtoList;
+    }
+
     public static EventShort eventToShort(Event event, int views) {
         return new EventShort(
                 event.getId(),
@@ -76,9 +88,11 @@ public final class EventMapper {
     }
 
     public static List<EventShort> eventToShort(Iterable<Event> events, Map<Long, Integer> views) {
+        int eventViews;
         List<EventShort> eventDtoList = new ArrayList<>();
         for (Event event : events) {
-            eventDtoList.add(eventToShort(event, views.get(event.getId())));
+            eventViews = views.getOrDefault(event.getId(), 0);
+            eventDtoList.add(eventToShort(event, eventViews));
         }
         return eventDtoList;
     }

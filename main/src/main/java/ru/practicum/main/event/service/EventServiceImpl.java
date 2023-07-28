@@ -22,14 +22,13 @@ import ru.practicum.main.location.repository.LocationRepository;
 import ru.practicum.main.user.model.User;
 import ru.practicum.main.user.repository.UserRepository;
 import ru.practicum.statisticclient.StatisticClient;
+import ru.practicum.statisticdto.ViewStats;
 
 import javax.persistence.criteria.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,7 +83,7 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.PENDING);
         }
         changeEventProperties(event, updateEventUserRequest);
-        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDto(eventRepository.save(event), views);
     }
 
@@ -92,18 +91,17 @@ public class EventServiceImpl implements EventService {
     @Transactional(readOnly = true)
     public EventFullDto getEventByInitiator(Long userId, Long eventId) {
         Event event = checkEvent(eventId, userId);
-        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDto(event, views);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EventShort> getEventsByInitiator(Long userId, Integer from, Integer size) {
-        return eventRepository.findByInitiatorId(userId, PageRequest.of(from, size))
-                .stream()
-                .map(event -> EventMapper.eventToShort(
-                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
-                .collect(Collectors.toList());
+        List<Event> events = eventRepository.findByInitiatorId(userId, PageRequest.of(from, size));
+        LocalDateTime minStartTime = getMinTimeFromEventList(events);
+        String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return EventMapper.eventToShort(events, getMapOfViews(minStartTime, uri));
     }
 
     @Override
@@ -130,11 +128,11 @@ public class EventServiceImpl implements EventService {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable).getContent();
-        return events
-                .stream()
-                .map(event -> EventMapper.eventToDto(
-                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
-                .collect(Collectors.toList());
+        LocalDateTime minStartTime = events.parallelStream()
+                .sorted(Comparator.comparing(Event::getCreatedOn))
+                .collect(Collectors.toList()).get(0).getPublishedOn();
+        String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return EventMapper.eventToDto(events, getMapOfViews(minStartTime, uri));
     }
 
     @Override
@@ -161,7 +159,7 @@ public class EventServiceImpl implements EventService {
                 EventStatus.PUBLISHED : EventStatus.CANCELED);
         locationRepository.saveAndFlush(event.getLocation());
         eventRepository.saveAndFlush(event);
-        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDto(eventRepository.getReferenceById(eventId), views);
     }
 
@@ -171,7 +169,7 @@ public class EventServiceImpl implements EventService {
         if (event == null) {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
-        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDto(event, views);
     }
 
@@ -199,19 +197,46 @@ public class EventServiceImpl implements EventService {
             return cb.and(Stream.of(predicates).filter(Objects::nonNull).toArray(Predicate[]::new));
         };
         Pageable pageable = PageRequest.of(from, size, sort.descending());
-        return eventRepository.findAll(spec, pageable)
-                .stream()
-                .map(event -> EventMapper.eventToShort(
-                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
-                .collect(Collectors.toList());
+        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+        LocalDateTime minStartTime = getMinTimeFromEventList(events);
+        String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return EventMapper.eventToShort(events, getMapOfViews(minStartTime, uri));
     }
 
-    private int getAmountOfViews(LocalDateTime eventPublishedOn, String uri) {
+    private Map<Long, Integer> getMapOfViews(LocalDateTime eventPublishedOn, String[] uri) {
+        List<ViewStats> viewStatsList = statisticClient.getStatistic(
+                eventPublishedOn.format(formatter),
+                LocalDateTime.now().format(formatter),
+                true,
+                uri);
+        Map<Long, Integer> idToCountMap = new HashMap<>();
+        for (ViewStats viewStats : viewStatsList) {
+            String viewStatsUri = viewStats.getUri();
+            Long id = extractIdFromUri(viewStatsUri);
+            idToCountMap.put(id, idToCountMap.getOrDefault(id, 0) + 1);
+        }
+        return idToCountMap;
+    }
+
+    private static Long extractIdFromUri(String uri) {
+        int lastSlashIndex = uri.lastIndexOf('/');
+        if (lastSlashIndex != -1 && lastSlashIndex < uri.length() - 1) {
+            String idString = uri.substring(lastSlashIndex + 1);
+            try {
+                return Long.parseLong(idString);
+            } catch (ObjectValidationException e) {
+                throw new ObjectValidationException("Ошибка извлечения id из uri");
+            }
+        }
+        return -1L;
+    }
+
+    private int getAmountOfViews(LocalDateTime eventPublishedOn, String[] uri) {
         return statisticClient.getStatistic(
                         eventPublishedOn.format(formatter),
                         LocalDateTime.now().format(formatter),
                         true,
-                        new String[]{uri})
+                        uri)
                 .size();
     }
 
@@ -250,5 +275,11 @@ public class EventServiceImpl implements EventService {
         if (updateEventRequest.getTitle() != null) {
             event.setTitle(updateEventRequest.getTitle());
         }
+    }
+
+    private LocalDateTime getMinTimeFromEventList(List<Event> events) {
+        return events.parallelStream()
+                .sorted(Comparator.comparing(Event::getCreatedOn))
+                .collect(Collectors.toList()).get(0).getPublishedOn();
     }
 }

@@ -15,12 +15,11 @@ import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
 import ru.practicum.main.exception.ObjectValidationException;
 import ru.practicum.statisticclient.StatisticClient;
+import ru.practicum.statisticdto.ViewStats;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,27 +32,18 @@ public class CompilationServiceImpl implements CompilationService {
     private final StatisticClient statisticClient;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private int getAmountOfViews(LocalDateTime eventPublishedOn, String uri) {
-        return statisticClient.getStatistic(
-                        eventPublishedOn.format(formatter),
-                        LocalDateTime.now().format(formatter),
-                        true,
-                        new String[]{uri})
-                .size();
-    }
-
     @Override
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         List<Event> eventList = eventRepository.findAllByIdIn(
                 newCompilationDto.getEvents() == null ? Collections.emptySet() : newCompilationDto.getEvents());
         Compilation compilation = compilationRepository.save(
                 CompilationMapper.compilationFromCreateDto(newCompilationDto, eventList));
-        Map<Long, Integer> views = eventList.stream()
-                .collect(Collectors.toMap(
-                        Event::getId,
-                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
-                        )));
-        return CompilationMapper.compilationToDto(compilation, views);
+        if (eventList.isEmpty()) {
+            return CompilationMapper.compilationToDto(compilation, Map.of());
+        }
+        LocalDateTime minStartTime = getMinTimeFromEventList(eventList);
+        String[] uri = eventList.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return CompilationMapper.compilationToDto(compilation, getMapOfViews(minStartTime, uri));
     }
 
     @Override
@@ -70,12 +60,12 @@ public class CompilationServiceImpl implements CompilationService {
             compilation.setPinned(updateCompilationRequest.getPinned());
         }
         Compilation updatedCompilation = compilationRepository.save(compilation);
-        Map<Long, Integer> views = compilation.getEvents().stream()
-                .collect(Collectors.toMap(
-                        Event::getId,
-                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
-                        )));
-        return CompilationMapper.compilationToDto(updatedCompilation, views);
+        if (updatedCompilation.getEvents().isEmpty()) {
+            return CompilationMapper.compilationToDto(compilation, Map.of());
+        }
+        LocalDateTime minStartTime = getMinTimeFromEventList(updatedCompilation.getEvents());
+        String[] uri = updatedCompilation.getEvents().stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return CompilationMapper.compilationToDto(updatedCompilation, getMapOfViews(minStartTime, uri));
     }
 
     @Override
@@ -87,12 +77,12 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional(readOnly = true)
     public CompilationDto getCompilationById(Long compId) {
         Compilation compilation = getCompilation(compId);
-        Map<Long, Integer> views = compilation.getEvents().stream()
-                .collect(Collectors.toMap(
-                        Event::getId,
-                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
-                        )));
-        return CompilationMapper.compilationToDto(compilation, views);
+        if (compilation.getEvents().isEmpty()) {
+            return CompilationMapper.compilationToDto(compilation, Map.of());
+        }
+        LocalDateTime minStartTime = getMinTimeFromEventList(compilation.getEvents());
+        String[] uri = compilation.getEvents().stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+        return CompilationMapper.compilationToDto(compilation, getMapOfViews(minStartTime, uri));
     }
 
     @Override
@@ -102,19 +92,52 @@ public class CompilationServiceImpl implements CompilationService {
         Page<Compilation> compilationPage;
         compilationPage = (pinned == null) ?
                 compilationRepository.findAll(pageRequest) : compilationRepository.findAllByPinned(pinned, pageRequest);
-        return compilationPage.getContent()
-                .stream()
-                .map(compilation -> CompilationMapper.compilationToDto(compilation, compilation.getEvents()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                Event::getId,
-                                (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
-                                )))))
-                .collect(Collectors.toList());
+        return compilationPage.getContent().stream().map(compilation -> {
+            if (compilation.getEvents().isEmpty()) {
+                return CompilationMapper.compilationToDto(compilation, Map.of());
+            }
+            LocalDateTime minStartTime = getMinTimeFromEventList(compilation.getEvents());
+            String[] uri = compilation.getEvents().stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
+            return CompilationMapper.compilationToDto(compilation, getMapOfViews(minStartTime, uri));
+        }).collect(Collectors.toList());
     }
 
     private Compilation getCompilation(Long compId) {
         return compilationRepository.findById(compId)
                 .orElseThrow(() -> new ObjectValidationException(String.format("Подборка с id = %d не найдена", compId)));
+    }
+
+    private Map<Long, Integer> getMapOfViews(LocalDateTime eventPublishedOn, String[] uri) {
+        List<ViewStats> viewStatsList = statisticClient.getStatistic(
+                eventPublishedOn.format(formatter),
+                LocalDateTime.now().format(formatter),
+                true,
+                uri);
+        Map<Long, Integer> idToCountMap = new HashMap<>();
+        for (ViewStats viewStats : viewStatsList) {
+            String viewStatsUri = viewStats.getUri();
+            Long id = extractIdFromUri(viewStatsUri);
+            idToCountMap.put(id, idToCountMap.getOrDefault(id, 0) + 1);
+        }
+        return idToCountMap;
+    }
+
+    private static Long extractIdFromUri(String uri) {
+        int lastSlashIndex = uri.lastIndexOf('/');
+        if (lastSlashIndex != -1 && lastSlashIndex < uri.length() - 1) {
+            String idString = uri.substring(lastSlashIndex + 1);
+            try {
+                return Long.parseLong(idString);
+            } catch (ObjectValidationException e) {
+                throw new ObjectValidationException("Ошибка извлечения id из uri");
+            }
+        }
+        return -1L;
+    }
+
+    private LocalDateTime getMinTimeFromEventList(List<Event> events) {
+        return events.parallelStream()
+                .sorted(Comparator.comparing(Event::getCreatedOn))
+                .collect(Collectors.toList()).get(0).getPublishedOn();
     }
 }
