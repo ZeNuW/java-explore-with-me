@@ -23,9 +23,9 @@ Consider defining a bean of type 'ru.practicum.statisticclient.StatisticClient' 
 Если я нашёл правильную информацию то: это происходит из-за того, что они в разных модулях и в модуле statisticclient
 нет аннотации @SpringBootApplication или @ComponentScan
 
-Добавлю сюда ещё вопрос относительно или скорее попрошу помощи :)
+Добавлю сюда ещё вопрос или скорее попрошу помощи :)
 Я пересмотрел спецификацию для Statistic service и не придумал, как мне избавиться от циклических запросов к нему
-есть ли тут возможность от них уйти?
+есть ли тут возможность от них уйти? Проблема именно во времени event, что у каждого оно своё и нельзя их все совместить в 1 запрос
  */
 public class MainApplication {
     public static void main(String[] args) {
