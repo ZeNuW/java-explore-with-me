@@ -3,17 +3,21 @@ package ru.practicum.main.event.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.enumeration.EventSort;
 import ru.practicum.main.event.dto.EventFullDto;
 import ru.practicum.main.event.dto.EventShort;
 import ru.practicum.main.event.service.EventService;
+import ru.practicum.statisticclient.StatisticClient;
+import ru.practicum.statisticdto.HitDto;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -24,8 +28,11 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final StatisticClient statisticClient;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @GetMapping
+    @Transactional
     public List<EventShort> getEvents(@RequestParam(required = false) String text,
                                       @RequestParam(required = false) List<Long> categories,
                                       @RequestParam(required = false) Boolean paid,
@@ -41,12 +48,24 @@ public class EventController {
         log.info("Получен запрос /events getEvents c text = {}, categories = {}, paid = {}, rangeStart = {}," +
                         "rangeEnd = {}, onlyAvailable = {}, sort = {}, from = {}, size = {}, request = {}", text, categories, paid,
                 rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
-        return eventService.getEvents(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
+        statisticClient.createHit(new HitDto(
+                null,
+                "ewm-main-service",
+                request.getRequestURI(),
+                request.getRemoteAddr(),
+                LocalDateTime.now().format(formatter)));
+        return eventService.getEvents(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
     }
 
     @GetMapping("/{eventId}")
     public EventFullDto getEvent(@PathVariable @Positive Long eventId, HttpServletRequest request) {
         log.info("Получен запрос/events/{eventId} getEvent c Id={}, request = {}", eventId, request);
-        return eventService.getEvent(eventId, request);
+        statisticClient.createHit(new HitDto(
+                null,
+                "ewm-main-service",
+                request.getRequestURI(),
+                request.getRemoteAddr(),
+                LocalDateTime.now().format(formatter)));
+        return eventService.getEvent(eventId);
     }
 }

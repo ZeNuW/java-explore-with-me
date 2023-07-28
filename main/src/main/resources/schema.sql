@@ -37,12 +37,11 @@ CREATE TABLE IF NOT EXISTS events
     initiator_id       BIGINT        REFERENCES users (user_id) ON DELETE SET NULL,
     location_id        BIGINT        REFERENCES locations (location_id) ON DELETE SET NULL,
     paid               BOOLEAN       NOT NULL,
-    participant_limit  INT DEFAULT 0 NOT NULL,
+    participant_limit  INT DEFAULT 0,
     published_on       timestamp     NOT NULL,
     request_moderation BOOLEAN       NOT NULL,
     state              VARCHAR(10)   NOT NULL,
-    title              VARCHAR(120)  NOT NULL,
-    views              INT DEFAULT 0 NOT NULL
+    title              VARCHAR(120)  NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS requests

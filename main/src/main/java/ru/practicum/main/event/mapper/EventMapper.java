@@ -16,6 +16,7 @@ import ru.practicum.main.user.model.User;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class EventMapper {
@@ -35,12 +36,11 @@ public final class EventMapper {
                 LocalDateTime.now(),
                 newEventDto.getRequestModeration(),
                 EventStatus.PENDING,
-                newEventDto.getTitle(),
-                0
+                newEventDto.getTitle()
         );
     }
 
-    public static EventFullDto eventToDto(Event event) {
+    public static EventFullDto eventToDto(Event event, int views) {
         return new EventFullDto(
                 event.getId(),
                 event.getAnnotation(),
@@ -57,11 +57,11 @@ public final class EventMapper {
                 event.getRequestModeration(),
                 event.getState(),
                 event.getTitle(),
-                event.getViews()
+                views
         );
     }
 
-    public static EventShort eventToShort(Event event) {
+    public static EventShort eventToShort(Event event, int views) {
         return new EventShort(
                 event.getId(),
                 event.getAnnotation(),
@@ -71,14 +71,14 @@ public final class EventMapper {
                 UserMapper.userToShort(event.getInitiator()),
                 event.getPaid(),
                 event.getTitle(),
-                event.getViews()
+                views
         );
     }
 
-    public static List<EventShort> eventToShort(Iterable<Event> events) {
+    public static List<EventShort> eventToShort(Iterable<Event> events, Map<Long, Integer> views) {
         List<EventShort> eventDtoList = new ArrayList<>();
         for (Event event : events) {
-            eventDtoList.add(eventToShort(event));
+            eventDtoList.add(eventToShort(event, views.get(event.getId())));
         }
         return eventDtoList;
     }

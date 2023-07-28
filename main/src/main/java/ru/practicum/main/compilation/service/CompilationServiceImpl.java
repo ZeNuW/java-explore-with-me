@@ -14,9 +14,14 @@ import ru.practicum.main.compilation.repository.CompilationRepository;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
 import ru.practicum.main.exception.ObjectValidationException;
+import ru.practicum.statisticclient.StatisticClient;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +30,17 @@ public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
+    private final StatisticClient statisticClient;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private int getAmountOfViews(LocalDateTime eventPublishedOn, String uri) {
+        return statisticClient.getStatistic(
+                        eventPublishedOn.format(formatter),
+                        LocalDateTime.now().format(formatter),
+                        true,
+                        uri)
+                .size();
+    }
 
     @Override
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
@@ -32,7 +48,12 @@ public class CompilationServiceImpl implements CompilationService {
                 newCompilationDto.getEvents() == null ? Collections.emptySet() : newCompilationDto.getEvents());
         Compilation compilation = compilationRepository.save(
                 CompilationMapper.compilationFromCreateDto(newCompilationDto, eventList));
-        return CompilationMapper.compilationToDto(compilation);
+        Map<Long, Integer> views = eventList.stream()
+                .collect(Collectors.toMap(
+                        Event::getId,
+                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
+                        )));
+        return CompilationMapper.compilationToDto(compilation, views);
     }
 
     @Override
@@ -49,7 +70,12 @@ public class CompilationServiceImpl implements CompilationService {
             compilation.setPinned(updateCompilationRequest.getPinned());
         }
         Compilation updatedCompilation = compilationRepository.save(compilation);
-        return CompilationMapper.compilationToDto(updatedCompilation);
+        Map<Long, Integer> views = compilation.getEvents().stream()
+                .collect(Collectors.toMap(
+                        Event::getId,
+                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
+                        )));
+        return CompilationMapper.compilationToDto(updatedCompilation, views);
     }
 
     @Override
@@ -60,7 +86,13 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     @Transactional(readOnly = true)
     public CompilationDto getCompilationById(Long compId) {
-        return CompilationMapper.compilationToDto(getCompilation(compId));
+        Compilation compilation = getCompilation(compId);
+        Map<Long, Integer> views = compilation.getEvents().stream()
+                .collect(Collectors.toMap(
+                        Event::getId,
+                        (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
+                        )));
+        return CompilationMapper.compilationToDto(compilation, views);
     }
 
     @Override
@@ -70,7 +102,13 @@ public class CompilationServiceImpl implements CompilationService {
         Page<Compilation> compilationPage;
         compilationPage = (pinned == null) ?
                 compilationRepository.findAll(pageRequest) : compilationRepository.findAllByPinned(pinned, pageRequest);
-        return CompilationMapper.compilationToDto(compilationPage.getContent());
+        return compilationPage.getContent()
+                .stream()
+                .map(compilation -> CompilationMapper.compilationToDto(compilation, compilation.getEvents().stream()
+                        .collect(Collectors.toMap(
+                                Event::getId,
+                                (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
+                                ))))).collect(Collectors.toList());
     }
 
     private Compilation getCompilation(Long compId) {

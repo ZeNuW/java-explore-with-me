@@ -1,7 +1,6 @@
 package ru.practicum.main.event.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,10 +22,8 @@ import ru.practicum.main.location.repository.LocationRepository;
 import ru.practicum.main.user.model.User;
 import ru.practicum.main.user.repository.UserRepository;
 import ru.practicum.statisticclient.StatisticClient;
-import ru.practicum.statisticdto.HitDto;
 
 import javax.persistence.criteria.*;
-import javax.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -63,7 +60,7 @@ public class EventServiceImpl implements EventService {
         User initiator = userRepository.findById(userId).orElseThrow(
                 () -> new ObjectValidationException(String.format("Пользователь с id = %d не найден", userId)));
         locationRepository.save(newEventDto.getLocation());
-        return EventMapper.eventToDto(eventRepository.save(EventMapper.eventFromDto(newEventDto, category, initiator, nowTime)));
+        return EventMapper.eventToDto(eventRepository.save(EventMapper.eventFromDto(newEventDto, category, initiator, nowTime)), 0);
     }
 
     @Override
@@ -73,7 +70,8 @@ public class EventServiceImpl implements EventService {
             long duration = Duration.between(nowTime, updateEventUserRequest.getEventDate()).toHours();
             if (duration < MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT) {
                 throw new ObjectValidationException(
-                        String.format("Дата события должна быть не менее чем за %d часа до публикации", MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT));
+                        String.format("Дата события должна быть не менее чем за %d часа до публикации",
+                                MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT));
             }
         }
         Event event = checkEvent(eventId, userId);
@@ -86,13 +84,16 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.PENDING);
         }
         changeEventProperties(event, updateEventUserRequest);
-        return EventMapper.eventToDto(eventRepository.save(event));
+        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        return EventMapper.eventToDto(eventRepository.save(event), views);
     }
 
     @Override
     @Transactional(readOnly = true)
     public EventFullDto getEventByInitiator(Long userId, Long eventId) {
-        return EventMapper.eventToDto(checkEvent(eventId, userId));
+        Event event = checkEvent(eventId, userId);
+        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        return EventMapper.eventToDto(event, views);
     }
 
     @Override
@@ -100,7 +101,8 @@ public class EventServiceImpl implements EventService {
     public List<EventShort> getEventsByInitiator(Long userId, Integer from, Integer size) {
         return eventRepository.findByInitiatorId(userId, PageRequest.of(from, size))
                 .stream()
-                .map(EventMapper::eventToShort)
+                .map(event -> EventMapper.eventToShort(
+                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
                 .collect(Collectors.toList());
     }
 
@@ -130,7 +132,8 @@ public class EventServiceImpl implements EventService {
         }, pageable).getContent();
         return events
                 .stream()
-                .map(EventMapper::eventToDto)
+                .map(event -> EventMapper.eventToDto(
+                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
                 .collect(Collectors.toList());
     }
 
@@ -158,36 +161,24 @@ public class EventServiceImpl implements EventService {
                 EventStatus.PUBLISHED : EventStatus.CANCELED);
         locationRepository.saveAndFlush(event.getLocation());
         eventRepository.saveAndFlush(event);
-        return EventMapper.eventToDto(eventRepository.getReferenceById(eventId));
+        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        return EventMapper.eventToDto(eventRepository.getReferenceById(eventId), views);
     }
 
     @Override
-    public EventFullDto getEvent(Long eventId, HttpServletRequest request) {
+    public EventFullDto getEvent(Long eventId) {
         Event event = eventRepository.findByIdAndState(eventId, EventStatus.PUBLISHED);
         if (event == null) {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
-        int hitsBefore = getAmountOfUniqueViews(event.getPublishedOn(), request);
-        statisticClient.createHit(new HitDto(
-                null,
-                "ewm-main-service",
-                request.getRequestURI(),
-                request.getRemoteAddr(),
-                LocalDateTime.now().format(formatter)));
-        event.setViews(event.getViews() + 1);
-        eventRepository.save(event);
-        int hitsAfter = getAmountOfUniqueViews(event.getPublishedOn(), request);
-        if (hitsAfter <= hitsBefore) {
-            event.setViews(event.getViews() - 1);
-            eventRepository.save(event);
-        }
-        return EventMapper.eventToDto(event);
+        int views = getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", eventId));
+        return EventMapper.eventToDto(event, views);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EventShort> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                                      LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from, Integer size, HttpServletRequest request) {
+                                      LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from, Integer size) {
         final LocalDateTime finalRangeStart = rangeStart != null ? rangeStart : LocalDateTime.now();
         final LocalDateTime finalRangeEnd = rangeEnd != null ? rangeEnd : finalRangeStart.plusYears(1);
         if (finalRangeStart.isAfter(finalRangeEnd)) {
@@ -208,25 +199,19 @@ public class EventServiceImpl implements EventService {
             return cb.and(Stream.of(predicates).filter(Objects::nonNull).toArray(Predicate[]::new));
         };
         Pageable pageable = PageRequest.of(from, size, sort.descending());
-        Page<Event> events = eventRepository.findAll(spec, pageable);
-        statisticClient.createHit(new HitDto(
-                null,
-                "ewm-main-service",
-                request.getRequestURI(),
-                request.getRemoteAddr(),
-                LocalDateTime.now().format(formatter)));
-        return events
+        return eventRepository.findAll(spec, pageable)
                 .stream()
-                .map(EventMapper::eventToShort)
+                .map(event -> EventMapper.eventToShort(
+                        event, getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))))
                 .collect(Collectors.toList());
     }
 
-    private int getAmountOfUniqueViews(LocalDateTime eventPublishedOn, HttpServletRequest request) {
+    private int getAmountOfViews(LocalDateTime eventPublishedOn, String uri) {
         return statisticClient.getStatistic(
                         eventPublishedOn.format(formatter),
                         LocalDateTime.now().format(formatter),
                         true,
-                        request.getRequestURI())
+                        uri)
                 .size();
     }
 
