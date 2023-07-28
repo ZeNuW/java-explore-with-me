@@ -27,11 +27,11 @@ public class StatisticServiceImpl implements StatisticService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ViewStats> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, List<String> uris) {
+    public List<ViewStats> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, String[] uris) {
         if (start.isAfter(end)) {
             throw new ObjectValidationException("Начало не может быть позже конца");
         }
-        if (uris == null || uris.isEmpty()) {
+        if (uris == null || uris.length == 0) {
             return unique ?
                     statisticRepository.findViewStatisticsWithoutUrisAndIsIpUnique(start, end, PageRequest.of(0, 10)) :
                     statisticRepository.findViewStatisticsWithoutUris(start, end, PageRequest.of(0, 10));

@@ -211,7 +211,7 @@ public class EventServiceImpl implements EventService {
                         eventPublishedOn.format(formatter),
                         LocalDateTime.now().format(formatter),
                         true,
-                        uri)
+                        new String[]{uri})
                 .size();
     }
 

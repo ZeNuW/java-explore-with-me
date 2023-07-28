@@ -29,7 +29,7 @@ public class StatisticClient extends BaseClient {
         );
     }
 
-    public List<ViewStats> getStatistic(String start, String end, Boolean unique, String uris) {
+    public List<ViewStats> getStatistic(String start, String end, Boolean unique, String[] uris) {
         Map<String, Object> parameters = Map.of(
                 "start", start,
                 "end", end,

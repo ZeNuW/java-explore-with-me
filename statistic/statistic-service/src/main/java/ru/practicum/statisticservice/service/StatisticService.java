@@ -10,5 +10,5 @@ public interface StatisticService {
 
     HitDto createHit(HitDto hitDto);
 
-    List<ViewStats> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, List<String> uris);
+    List<ViewStats> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, String[] uris);
 }

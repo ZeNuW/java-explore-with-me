@@ -38,7 +38,7 @@ public class CompilationServiceImpl implements CompilationService {
                         eventPublishedOn.format(formatter),
                         LocalDateTime.now().format(formatter),
                         true,
-                        uri)
+                        new String[]{uri})
                 .size();
     }
 
@@ -104,11 +104,13 @@ public class CompilationServiceImpl implements CompilationService {
                 compilationRepository.findAll(pageRequest) : compilationRepository.findAllByPinned(pinned, pageRequest);
         return compilationPage.getContent()
                 .stream()
-                .map(compilation -> CompilationMapper.compilationToDto(compilation, compilation.getEvents().stream()
+                .map(compilation -> CompilationMapper.compilationToDto(compilation, compilation.getEvents()
+                        .stream()
                         .collect(Collectors.toMap(
                                 Event::getId,
                                 (event -> getAmountOfViews(event.getPublishedOn(), String.format("/events/%d", event.getId()))
-                                ))))).collect(Collectors.toList());
+                                )))))
+                .collect(Collectors.toList());
     }
 
     private Compilation getCompilation(Long compId) {
