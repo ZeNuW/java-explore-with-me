@@ -19,6 +19,15 @@ public class StatisticsUtil {
     private final StatisticClient statisticClient;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    public int getAmountOfViews(LocalDateTime eventPublishedOn, String[] uri) {
+        return statisticClient.getStatistic(
+                        eventPublishedOn.format(formatter),
+                        LocalDateTime.now().format(formatter),
+                        true,
+                        uri)
+                .size();
+    }
+
     public Map<Long, Integer> getMapOfViews(LocalDateTime eventPublishedOn, String[] uri) {
         List<ViewStats> viewStatsList = statisticClient.getStatistic(
                 eventPublishedOn.format(formatter),

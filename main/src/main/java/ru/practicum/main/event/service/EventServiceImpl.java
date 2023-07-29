@@ -22,12 +22,10 @@ import ru.practicum.main.location.repository.LocationRepository;
 import ru.practicum.main.user.model.User;
 import ru.practicum.main.user.repository.UserRepository;
 import ru.practicum.main.util.StatisticsUtil;
-import ru.practicum.statisticclient.StatisticClient;
 
 import javax.persistence.criteria.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,9 +39,7 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
-    private final StatisticClient statisticClient;
     private final StatisticsUtil statisticsUtil;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT = 2;
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT_ADMIN_UPDATE = 1;
 
@@ -91,7 +87,7 @@ public class EventServiceImpl implements EventService {
     @Transactional(readOnly = true)
     public EventFullDtoWithViews getEventByInitiator(Long userId, Long eventId) {
         Event event = checkEvent(eventId, userId);
-        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
+        int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDtoWithViews(event, views);
     }
 
@@ -166,7 +162,7 @@ public class EventServiceImpl implements EventService {
         if (event == null) {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
-        int views = getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
+        int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         return EventMapper.eventToDtoWithViews(event, views);
     }
 
@@ -198,15 +194,6 @@ public class EventServiceImpl implements EventService {
         LocalDateTime minStartTime = getMinTimeFromEventList(events);
         String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
         return EventMapper.eventToShortWithViews(events, statisticsUtil.getMapOfViews(minStartTime, uri));
-    }
-
-    private int getAmountOfViews(LocalDateTime eventPublishedOn, String[] uri) {
-        return statisticClient.getStatistic(
-                        eventPublishedOn.format(formatter),
-                        LocalDateTime.now().format(formatter),
-                        true,
-                        uri)
-                .size();
     }
 
     private Event checkEvent(Long eventId, Long userId) {
