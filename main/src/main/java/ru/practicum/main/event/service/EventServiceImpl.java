@@ -41,7 +41,7 @@ public class EventServiceImpl implements EventService {
     private final LocationRepository locationRepository;
     private final StatisticsUtil statisticsUtil;
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT = 2;
-    private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT_ADMIN_UPDATE = 1;
+    private static final int MINIMUM_HOURS_BEFORE_EVENT_ADMIN_UPDATE = 1;
 
     @Override
     public EventFullDto createEvent(Long userId, NewEventDto newEventDto) {
@@ -93,7 +93,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
-        public List<EventShort> getEventsByInitiator(Long userId, Integer from, Integer size) {
+    public List<EventShort> getEventsByInitiator(Long userId, Integer from, Integer size) {
         List<Event> events = eventRepository.findByInitiatorId(userId, PageRequest.of(from, size));
         return EventMapper.eventToShort(events);
     }
@@ -101,7 +101,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public List<EventFullDtoWithViews> getEventsByAdmin(List<Long> users, EventStatus status, List<Long> categories,
-                                               LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
+                                                        LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
         Pageable pageable = PageRequest.of(from, size);
         List<Event> events = eventRepository.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -138,9 +138,9 @@ public class EventServiceImpl implements EventService {
                 throw new ObjectValidationException("Дата начала события не может быть в прошлом");
             }
             long duration = Duration.between(currentTime, eventTime).toHours();
-            if (duration < MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT_ADMIN_UPDATE) {
+            if (duration < MINIMUM_HOURS_BEFORE_EVENT_ADMIN_UPDATE) {
                 throw new ObjectValidationException(String.format("Дата события должна быть не менее чем за %d часа до публикации",
-                        MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT_ADMIN_UPDATE));
+                        MINIMUM_HOURS_BEFORE_EVENT_ADMIN_UPDATE));
             }
         }
         Event event = eventRepository.findById(eventId)
@@ -169,7 +169,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public List<EventShortWithViews> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                                      LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from, Integer size) {
+                                               LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from, Integer size) {
         final LocalDateTime finalRangeStart = rangeStart != null ? rangeStart : LocalDateTime.now();
         final LocalDateTime finalRangeEnd = rangeEnd != null ? rangeEnd : finalRangeStart.plusYears(1);
         if (finalRangeStart.isAfter(finalRangeEnd)) {
