@@ -3,12 +3,11 @@ package ru.practicum.main.event.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.enumeration.EventSort;
-import ru.practicum.main.event.dto.EventFullDto;
-import ru.practicum.main.event.dto.EventShort;
+import ru.practicum.main.event.dto.EventFullDtoWithViews;
+import ru.practicum.main.event.dto.EventShortWithViews;
 import ru.practicum.main.event.service.EventService;
 import ru.practicum.statisticclient.StatisticClient;
 import ru.practicum.statisticdto.HitDto;
@@ -32,19 +31,18 @@ public class EventController {
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @GetMapping
-    @Transactional
-    public List<EventShort> getEvents(@RequestParam(required = false) String text,
-                                      @RequestParam(required = false) List<Long> categories,
-                                      @RequestParam(required = false) Boolean paid,
-                                      @RequestParam(required = false)
+    public List<EventShortWithViews> getEvents(@RequestParam(required = false) String text,
+                                               @RequestParam(required = false) List<Long> categories,
+                                               @RequestParam(required = false) Boolean paid,
+                                               @RequestParam(required = false)
                                       @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                      @RequestParam(required = false)
+                                               @RequestParam(required = false)
                                       @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
-                                      @RequestParam(required = false) Boolean onlyAvailable,
-                                      @RequestParam(defaultValue = "EVENT_DATE") EventSort sort,
-                                      @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                      @RequestParam(defaultValue = "10") @Positive Integer size,
-                                      HttpServletRequest request) {
+                                               @RequestParam(required = false) Boolean onlyAvailable,
+                                               @RequestParam(defaultValue = "EVENT_DATE") EventSort sort,
+                                               @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                               @RequestParam(defaultValue = "10") @Positive Integer size,
+                                               HttpServletRequest request) {
         log.info("Получен запрос /events getEvents c text = {}, categories = {}, paid = {}, rangeStart = {}," +
                         "rangeEnd = {}, onlyAvailable = {}, sort = {}, from = {}, size = {}, request = {}", text, categories, paid,
                 rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
@@ -58,7 +56,7 @@ public class EventController {
     }
 
     @GetMapping("/{eventId}")
-    public EventFullDto getEvent(@PathVariable @Positive Long eventId, HttpServletRequest request) {
+    public EventFullDtoWithViews getEvent(@PathVariable @Positive Long eventId, HttpServletRequest request) {
         log.info("Получен запрос/events/{eventId} getEvent c Id={}, request = {}", eventId, request);
         statisticClient.createHit(new HitDto(
                 null,

@@ -9,14 +9,13 @@ import ru.practicum.main.event.mapper.EventMapper;
 import ru.practicum.main.event.model.Event;
 
 import java.util.List;
-import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CompilationMapper {
 
-    public static CompilationDto compilationToDto(Compilation compilation, Map<Long, Integer> views) {
+    public static CompilationDto compilationToDto(Compilation compilation) {
         return new CompilationDto(compilation.getId(),
-                EventMapper.eventToShort(compilation.getEvents(), views),
+                EventMapper.eventToShort(compilation.getEvents()),
                 compilation.getPinned(),
                 compilation.getTitle()
         );

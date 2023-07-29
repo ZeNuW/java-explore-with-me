@@ -24,5 +24,4 @@ public class EventShort {
     private UserShort initiator;
     private Boolean paid;
     private String title;
-    private Integer views;
 }

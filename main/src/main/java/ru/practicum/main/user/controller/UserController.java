@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.event.dto.NewEventDto;
-import ru.practicum.main.event.dto.EventFullDto;
-import ru.practicum.main.event.dto.EventShort;
-import ru.practicum.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.service.EventService;
 import ru.practicum.main.request.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.main.request.dto.EventRequestStatusUpdateResult;
@@ -49,8 +46,8 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/events/{eventId}")
-    public EventFullDto getEventByInitiator(@PathVariable @Positive Long userId,
-                                            @PathVariable @Positive Long eventId) {
+    public EventFullDtoWithViews getEventByInitiator(@PathVariable @Positive Long userId,
+                                                     @PathVariable @Positive Long eventId) {
         log.info("Получен запрос users/{userId}/events/{eventId} " +
                 "getEventByInitiator userId={}, eventId={}", userId, eventId);
         return eventService.getEventByInitiator(userId, eventId);

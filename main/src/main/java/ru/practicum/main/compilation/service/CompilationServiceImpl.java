@@ -14,9 +14,7 @@ import ru.practicum.main.compilation.repository.CompilationRepository;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
 import ru.practicum.main.exception.ObjectValidationException;
-import ru.practicum.main.util.StatisticsUtil;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,7 +25,6 @@ public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
-    private final StatisticsUtil statisticsUtil;
 
     @Override
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
@@ -35,12 +32,7 @@ public class CompilationServiceImpl implements CompilationService {
                 newCompilationDto.getEvents() == null ? Collections.emptySet() : newCompilationDto.getEvents());
         Compilation compilation = compilationRepository.save(
                 CompilationMapper.compilationFromCreateDto(newCompilationDto, eventList));
-        if (eventList.isEmpty()) {
-            return CompilationMapper.compilationToDto(compilation, Map.of());
-        }
-        LocalDateTime minStartTime = getMinTimeFromEventList(eventList);
-        String[] uri = eventList.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
-        return CompilationMapper.compilationToDto(compilation, statisticsUtil.getMapOfViews(minStartTime, uri));
+        return CompilationMapper.compilationToDto(compilation);
     }
 
     @Override
@@ -56,17 +48,7 @@ public class CompilationServiceImpl implements CompilationService {
         if (updateCompilationRequest.getPinned() != null) {
             compilation.setPinned(updateCompilationRequest.getPinned());
         }
-        Compilation updatedCompilation = compilationRepository.save(compilation);
-        return ifEventListIsEmpty(compilation, updatedCompilation);
-    }
-
-    private CompilationDto ifEventListIsEmpty(Compilation compilation, Compilation updatedCompilation) {
-        if (updatedCompilation.getEvents().isEmpty()) {
-            return CompilationMapper.compilationToDto(compilation, Map.of());
-        }
-        LocalDateTime minStartTime = getMinTimeFromEventList(updatedCompilation.getEvents());
-        String[] uri = updatedCompilation.getEvents().stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
-        return CompilationMapper.compilationToDto(updatedCompilation, statisticsUtil.getMapOfViews(minStartTime, uri));
+        return CompilationMapper.compilationToDto(compilationRepository.save(compilation));
     }
 
     @Override
@@ -77,8 +59,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     @Transactional(readOnly = true)
     public CompilationDto getCompilationById(Long compId) {
-        Compilation compilation = getCompilation(compId);
-        return ifEventListIsEmpty(compilation, compilation);
+        return CompilationMapper.compilationToDto(getCompilation(compId));
     }
 
     @Override
@@ -90,18 +71,12 @@ public class CompilationServiceImpl implements CompilationService {
                 compilationRepository.findAll(pageRequest) : compilationRepository.findAllByPinned(pinned, pageRequest);
         return compilationPage.getContent()
                 .stream()
-                .map(compilation -> ifEventListIsEmpty(compilation, compilation))
+                .map(CompilationMapper::compilationToDto)
                 .collect(Collectors.toList());
     }
 
     private Compilation getCompilation(Long compId) {
         return compilationRepository.findById(compId)
                 .orElseThrow(() -> new ObjectValidationException(String.format("Подборка с id = %d не найдена", compId)));
-    }
-
-    private LocalDateTime getMinTimeFromEventList(List<Event> events) {
-        return events.parallelStream()
-                .sorted(Comparator.comparing(Event::getCreatedOn))
-                .collect(Collectors.toList()).get(0).getPublishedOn();
     }
 }

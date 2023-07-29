@@ -15,6 +15,7 @@ import ru.practicum.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.main.compilation.service.CompilationService;
 import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.dto.EventFullDto;
+import ru.practicum.main.event.dto.EventFullDtoWithViews;
 import ru.practicum.main.event.dto.UpdateEventAdminRequest;
 import ru.practicum.main.event.service.EventService;
 import ru.practicum.main.user.dto.NewUserRequest;
@@ -62,15 +63,15 @@ public class AdminController {
     }
 
     @GetMapping("/events")
-    public List<EventFullDto> getEventsByAdmin(@RequestParam(required = false) List<Long> users,
-                                               @RequestParam(required = false) EventStatus status,
-                                               @RequestParam(required = false) List<Long> categories,
-                                               @RequestParam(required = false)
+    public List<EventFullDtoWithViews> getEventsByAdmin(@RequestParam(required = false) List<Long> users,
+                                                        @RequestParam(required = false) EventStatus status,
+                                                        @RequestParam(required = false) List<Long> categories,
+                                                        @RequestParam(required = false)
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                               @RequestParam(required = false)
+                                                        @RequestParam(required = false)
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
-                                               @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                               @RequestParam(defaultValue = "10") @Positive Integer size) {
+                                                        @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                                        @RequestParam(defaultValue = "10") @Positive Integer size) {
         log.info("Получен запрос admin/events getEventsByAdmin");
         return eventService.getEventsByAdmin(users, status, categories, rangeStart, rangeEnd, from, size);
     }

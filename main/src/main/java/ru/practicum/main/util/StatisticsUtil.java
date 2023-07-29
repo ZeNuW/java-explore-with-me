@@ -34,7 +34,7 @@ public class StatisticsUtil {
         return idToCountMap;
     }
 
-    public Long extractIdFromUri(String uri) {
+    private Long extractIdFromUri(String uri) {
         int lastSlashIndex = uri.lastIndexOf('/');
         if (lastSlashIndex != -1 && lastSlashIndex < uri.length() - 1) {
             String idString = uri.substring(lastSlashIndex + 1);

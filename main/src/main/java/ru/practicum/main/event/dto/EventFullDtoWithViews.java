@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class EventFullDto {
+public class EventFullDtoWithViews {
     private Long id;
     private String annotation;
     private CategoryDto category;
@@ -31,4 +31,5 @@ public class EventFullDto {
     private Boolean requestModeration = true;
     private EventStatus state;
     private String title;
+    private Integer views;
 }
