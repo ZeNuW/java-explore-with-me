@@ -2,13 +2,15 @@ package ru.practicum.statisticclient;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.statisticdto.HitDto;
+import ru.practicum.statisticdto.ViewStats;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,17 +29,20 @@ public class StatisticClient extends BaseClient {
         );
     }
 
-    public ResponseEntity<Object> getStatistic(LocalDateTime start, LocalDateTime end, Boolean unique, List<String> uris) {
+    public List<ViewStats> getStatistic(String start, String end, Boolean unique, String[] uris) {
         Map<String, Object> parameters = Map.of(
                 "start", start,
                 "end", end,
                 "unique", unique,
                 "uris", uris
         );
-        return get(API_PREFIX_STATS + "?start={start}&end={}&uris={}&unique={}", parameters);
+        String path = API_PREFIX_STATS + "?start={start}&end={end}&uris={uris}&unique={unique}";
+        ResponseEntity<List<ViewStats>> serverResponse = rest.exchange(path, HttpMethod.GET,
+                null, new ParameterizedTypeReference<>() {}, parameters);
+        return serverResponse.getBody();
     }
 
-    public ResponseEntity<Object> createHit(HitDto hitDto) {
-        return post(API_PREFIX_HIT, hitDto);
+    public void createHit(HitDto hitDto) {
+        post(API_PREFIX_HIT, hitDto);
     }
 }

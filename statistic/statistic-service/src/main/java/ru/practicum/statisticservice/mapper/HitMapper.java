@@ -21,4 +21,14 @@ public final class HitMapper {
         hit.setUri(hitDto.getUri());
         return hit;
     }
+
+    public static HitDto hitToDto(Hit hit) {
+        return new HitDto(
+                hit.getId(),
+                hit.getApp(),
+                hit.getUri(),
+                hit.getIp(),
+                hit.getCreated().format(formatter)
+        );
+    }
 }
