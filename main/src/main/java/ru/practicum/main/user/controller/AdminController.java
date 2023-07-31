@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.category.dto.CategoryDto;
 import ru.practicum.main.category.dto.NewCategoryDto;
 import ru.practicum.main.category.service.CategoryService;
+import ru.practicum.main.comment.service.CommentService;
 import ru.practicum.main.compilation.dto.CompilationDto;
 import ru.practicum.main.compilation.dto.NewCompilationDto;
 import ru.practicum.main.compilation.dto.UpdateCompilationRequest;
@@ -38,6 +39,7 @@ public class AdminController {
     private final UserService userService;
     private final CategoryService categoryService;
     private final EventService eventService;
+    private final CommentService commentService;
     private final CompilationService compilationService;
 
     @PostMapping("/categories")
@@ -125,5 +127,12 @@ public class AdminController {
                                             @RequestBody @Valid UpdateCompilationRequest updateCompilationRequest) {
         log.info("Получен запрос admin/compilations/{compId} updateCompilation c compId={}", compId);
         return compilationService.updateCompilation(compId, updateCompilationRequest);
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(@PathVariable @Positive Long commentId) {
+        log.info("Получен запрос admin/comments/{commentId} deleteComment c commentId = {}", commentId);
+        commentService.deleteCommentByAdmin(commentId);
     }
 }
