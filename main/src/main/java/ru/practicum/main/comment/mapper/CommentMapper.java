@@ -29,6 +29,6 @@ public class CommentMapper {
         comment.setEvent(event);
         comment.setCommentator(commentator);
         comment.setCreated(LocalDateTime.now());
-        return new Comment();
+        return comment;
     }
 }

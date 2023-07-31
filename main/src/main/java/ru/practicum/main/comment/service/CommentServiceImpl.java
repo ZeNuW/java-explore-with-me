@@ -42,9 +42,6 @@ public class CommentServiceImpl implements CommentService {
         if (event.getState() != EventStatus.PUBLISHED) {
             throw new ObjectConflictException("Нельзя оставить комментарий на неопубликованное событие!");
         }
-        if (event.getEventDate().isAfter(LocalDateTime.now())) {
-            throw new ObjectConflictException("Нельзя оставить комментарий на событие, которое ещё не начилось!");
-        }
         if (request == null || request.getStatus() != RequestStatus.CONFIRMED) {
             throw new ObjectConflictException("Вы не были участником события и не можете оставить комментарий!");
         }
