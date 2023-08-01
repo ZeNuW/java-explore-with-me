@@ -86,16 +86,16 @@ public class EventController {
     @PatchMapping("/comments/{commentId}/{userId}")
     public CommentDto updateComment(@PathVariable @Positive Long userId, @PathVariable @Positive Long commentId,
                                     @RequestBody @Valid CommentUpdateDto commentUpdateDto) {
-        log.info("Получен запрос /{eventId}/comments/{userId} createComment c userId = {}, " +
-                "commentId = {} ,commentUpdateDto = {}", userId, commentId, commentUpdateDto);
+        log.info("Получен запрос /comments/{commentId}/{userId} updateComment c commentId = {}, " +
+                "userId = {} ,commentUpdateDto = {}", commentId, userId, commentUpdateDto);
         return commentService.updateComment(userId, commentId, commentUpdateDto);
     }
 
     @DeleteMapping("/comments/{commentId}/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(@PathVariable @Positive Long commentId, @PathVariable @Positive Long userId) {
-        log.info("Получен запрос /{eventId}/comments/{userId} createComment c userId = {}, " +
-                "commentId = {}", userId, commentId);
+        log.info("Получен запрос /comments/{commentId}/{userId} deleteComment c commentId = {}, " +
+                "userId = {}", commentId, userId);
         commentService.deleteCommentByUser(commentId, userId);
     }
 }

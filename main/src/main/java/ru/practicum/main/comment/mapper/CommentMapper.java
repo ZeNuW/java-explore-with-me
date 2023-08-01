@@ -9,6 +9,9 @@ import ru.practicum.main.event.model.Event;
 import ru.practicum.main.user.model.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommentMapper {
@@ -21,6 +24,12 @@ public class CommentMapper {
                 comment.getCreated(),
                 comment.getLastUpdate()
         );
+    }
+
+    public static List<CommentDto> commentToDto(Iterable<Comment> comments) {
+        return StreamSupport.stream(comments.spliterator(), false)
+                .map(CommentMapper::commentToDto)
+                .collect(Collectors.toList());
     }
 
     public static Comment commentFromCreateDto(CommentCreateDto commentDto, User commentator, Event event) {

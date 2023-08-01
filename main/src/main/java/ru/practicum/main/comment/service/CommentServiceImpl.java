@@ -2,6 +2,7 @@ package ru.practicum.main.comment.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.comment.mapper.CommentMapper;
 import ru.practicum.main.comment.dto.CommentCreateDto;
 import ru.practicum.main.comment.dto.CommentDto;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
+import ru.practicum.main.comment.dto.CommentDto;
+import ru.practicum.main.comment.mapper.CommentMapper;
 import ru.practicum.main.comment.model.Comment;
 import ru.practicum.main.comment.repository.CommentRepository;
 import ru.practicum.main.enumeration.EventSort;
@@ -92,7 +94,7 @@ public class EventServiceImpl implements EventService {
         Event event = checkEvent(eventId, userId);
         int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         List<Comment> comments = commentRepository.findAllByEventId(eventId);
-        return EventMapper.eventToDtoWithViews(event, views, comments);
+        return EventMapper.eventToDtoWithViews(event, views, CommentMapper.commentToDto(comments));
     }
 
     @Override
@@ -131,7 +133,7 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList()).get(0).getPublishedOn();
         String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
         List<Long> eventIds = events.stream().map(Event::getId).collect(Collectors.toList());
-        Map<Long, List<Comment>> commentsMap = groupCommentsByEventId(commentRepository.findAllByEventIdIn(eventIds));
+        Map<Long, List<CommentDto>> commentsMap = groupCommentsByEventId(CommentMapper.commentToDto(commentRepository.findAllByEventIdIn(eventIds)));
         return EventMapper.eventToDtoWithViews(events, statisticsUtil.getMapOfViews(minStartTime, uri), commentsMap);
     }
 
@@ -170,7 +172,7 @@ public class EventServiceImpl implements EventService {
         }
         int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
         List<Comment> comments = commentRepository.findAllByEventId(eventId);
-        return EventMapper.eventToDtoWithViews(event, views, comments);
+        return EventMapper.eventToDtoWithViews(event, views, CommentMapper.commentToDto(comments));
     }
 
     @Override
@@ -246,10 +248,10 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList()).get(0).getPublishedOn();
     }
 
-    private Map<Long, List<Comment>> groupCommentsByEventId(List<Comment> allComments) {
-        Map<Long, List<Comment>> commentsMap = new HashMap<>();
-        for (Comment comment : allComments) {
-            long eventId = comment.getEvent().getId();
+    private Map<Long, List<CommentDto>> groupCommentsByEventId(List<CommentDto> allComments) {
+        Map<Long, List<CommentDto>> commentsMap = new HashMap<>();
+        for (CommentDto comment : allComments) {
+            long eventId = comment.getEventId();
             commentsMap.computeIfAbsent(eventId, k -> new ArrayList<>()).add(comment);
         }
         return commentsMap;
