@@ -6,9 +6,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.comment.dto.CommentCreateDto;
+import ru.practicum.main.comment.dto.CommentInputDto;
 import ru.practicum.main.comment.dto.CommentDto;
-import ru.practicum.main.comment.dto.CommentUpdateDto;
 import ru.practicum.main.comment.service.CommentService;
 import ru.practicum.main.enumeration.EventSort;
 import ru.practicum.main.event.dto.EventFullDtoWithViews;
@@ -77,18 +76,18 @@ public class EventController {
     @PostMapping("/{eventId}/comments/{userId}")
     @ResponseStatus(HttpStatus.CREATED)
     public CommentDto createComment(@PathVariable @Positive Long eventId, @PathVariable @Positive Long userId,
-                                    @RequestBody @Valid CommentCreateDto commentCreateDto) {
+                                    @RequestBody @Valid CommentInputDto commentInputDto) {
         log.info("Получен запрос /{eventId}/comments/{userId} createComment c eventId = {}, userId = {}, commentCreateDto = {}",
-                eventId, userId, commentCreateDto);
-        return commentService.createComment(eventId, userId, commentCreateDto);
+                eventId, userId, commentInputDto);
+        return commentService.createComment(eventId, userId, commentInputDto);
     }
 
     @PatchMapping("/comments/{commentId}/{userId}")
     public CommentDto updateComment(@PathVariable @Positive Long userId, @PathVariable @Positive Long commentId,
-                                    @RequestBody @Valid CommentUpdateDto commentUpdateDto) {
+                                    @RequestBody @Valid CommentInputDto commentInputDto) {
         log.info("Получен запрос /comments/{commentId}/{userId} updateComment c commentId = {}, " +
-                "userId = {} ,commentUpdateDto = {}", commentId, userId, commentUpdateDto);
-        return commentService.updateComment(userId, commentId, commentUpdateDto);
+                "userId = {} ,commentInputDto = {}", commentId, userId, commentInputDto);
+        return commentService.updateComment(userId, commentId, commentInputDto);
     }
 
     @DeleteMapping("/comments/{commentId}/{userId}")
