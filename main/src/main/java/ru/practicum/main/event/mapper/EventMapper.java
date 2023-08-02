@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ru.practicum.main.category.mapper.CategoryMapper;
 import ru.practicum.main.category.model.Category;
+import ru.practicum.main.comment.dto.CommentDto;
 import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.model.Event;
@@ -105,7 +106,7 @@ public final class EventMapper {
         return eventDtoList;
     }
 
-    public static EventFullDtoWithViews eventToDtoWithViews(Event event, int views) {
+    public static EventFullDtoWithViews eventToDtoWithViews(Event event, int views, List<CommentDto> comments) {
         return new EventFullDtoWithViews(
                 event.getId(),
                 event.getAnnotation(),
@@ -122,16 +123,20 @@ public final class EventMapper {
                 event.getRequestModeration(),
                 event.getState(),
                 event.getTitle(),
-                views
+                views,
+                comments
         );
     }
 
-    public static List<EventFullDtoWithViews> eventToDtoWithViews(Iterable<Event> events, Map<Long, Integer> views) {
+    public static List<EventFullDtoWithViews> eventToDtoWithViews(Iterable<Event> events, Map<Long, Integer> views,
+                                                                  Map<Long, List<CommentDto>> commentsMap) {
         List<EventFullDtoWithViews> eventDtoList = new ArrayList<>();
         int eventViews;
+        List<CommentDto> comments;
         for (Event event : events) {
             eventViews = views.getOrDefault(event.getId(), 0);
-            eventDtoList.add(eventToDtoWithViews(event, eventViews));
+            comments = commentsMap.getOrDefault(event.getId(), List.of());
+            eventDtoList.add(eventToDtoWithViews(event, eventViews, comments));
         }
         return eventDtoList;
     }

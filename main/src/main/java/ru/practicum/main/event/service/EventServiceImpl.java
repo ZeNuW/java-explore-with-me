@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
+import ru.practicum.main.comment.dto.CommentDto;
+import ru.practicum.main.comment.mapper.CommentMapper;
+import ru.practicum.main.comment.model.Comment;
+import ru.practicum.main.comment.repository.CommentRepository;
 import ru.practicum.main.enumeration.EventSort;
 import ru.practicum.main.enumeration.EventStatus;
 import ru.practicum.main.enumeration.StateAction;
@@ -39,6 +43,7 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
+    private final CommentRepository commentRepository;
     private final StatisticsUtil statisticsUtil;
     private static final int MINIMUM_HOURS_BEFORE_TO_CREATE_EVENT = 2;
     private static final int MINIMUM_HOURS_BEFORE_EVENT_ADMIN_UPDATE = 1;
@@ -88,7 +93,8 @@ public class EventServiceImpl implements EventService {
     public EventFullDtoWithViews getEventByInitiator(Long userId, Long eventId) {
         Event event = checkEvent(eventId, userId);
         int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
-        return EventMapper.eventToDtoWithViews(event, views);
+        List<Comment> comments = commentRepository.findAllByEventId(eventId);
+        return EventMapper.eventToDtoWithViews(event, views, CommentMapper.commentToDto(comments));
     }
 
     @Override
@@ -126,7 +132,9 @@ public class EventServiceImpl implements EventService {
                 .sorted(Comparator.comparing(Event::getCreatedOn))
                 .collect(Collectors.toList()).get(0).getPublishedOn();
         String[] uri = events.stream().map(event -> "/events/" + event.getId()).toArray(String[]::new);
-        return EventMapper.eventToDtoWithViews(events, statisticsUtil.getMapOfViews(minStartTime, uri));
+        List<Long> eventIds = events.stream().map(Event::getId).collect(Collectors.toList());
+        Map<Long, List<CommentDto>> commentsMap = groupCommentsByEventId(CommentMapper.commentToDto(commentRepository.findAllByEventIdIn(eventIds)));
+        return EventMapper.eventToDtoWithViews(events, statisticsUtil.getMapOfViews(minStartTime, uri), commentsMap);
     }
 
     @Override
@@ -163,7 +171,8 @@ public class EventServiceImpl implements EventService {
             throw new ObjectNotExistException(String.format("Эвент с id = %d не был найден", eventId));
         }
         int views = statisticsUtil.getAmountOfViews(event.getPublishedOn(), new String[]{String.format("/events/%d", eventId)});
-        return EventMapper.eventToDtoWithViews(event, views);
+        List<Comment> comments = commentRepository.findAllByEventId(eventId);
+        return EventMapper.eventToDtoWithViews(event, views, CommentMapper.commentToDto(comments));
     }
 
     @Override
@@ -237,5 +246,14 @@ public class EventServiceImpl implements EventService {
         return events.parallelStream()
                 .sorted(Comparator.comparing(Event::getCreatedOn))
                 .collect(Collectors.toList()).get(0).getPublishedOn();
+    }
+
+    private Map<Long, List<CommentDto>> groupCommentsByEventId(List<CommentDto> allComments) {
+        Map<Long, List<CommentDto>> commentsMap = new HashMap<>();
+        for (CommentDto comment : allComments) {
+            long eventId = comment.getEventId();
+            commentsMap.computeIfAbsent(eventId, k -> new ArrayList<>()).add(comment);
+        }
+        return commentsMap;
     }
 }
